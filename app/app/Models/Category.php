@@ -2,26 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class User extends Authenticatable
+class Category extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'name',
-        'email',
-        'password',
-    ];
-
-    protected $hidden = [
-        'password',
+        'slug',
     ];
 
     /**
-     * Un utilisateur peut avoir plusieurs articles
+     * Une catégorie possède plusieurs articles
      */
     public function articles(): HasMany
     {
