@@ -3,17 +3,20 @@
 namespace App\Http\Controllers\Front;
 
 use App\Http\Controllers\Controller;
-use App\Models\Articles;
+use App\Models\Article;
 use App\Models\Category;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        $articles = Articles::with('category')->latest()->paginate(15);
+        $articles = Article::published()
+            ->with('category')
+            ->latest('published_at')
+            ->paginate(10);
+
         $categories = Category::withCount('articles')->get();
+
         return view('home', compact('articles', 'categories'));
     }
 }

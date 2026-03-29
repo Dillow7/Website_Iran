@@ -1,22 +1,27 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Front;
+
 use App\Http\Controllers\Controller;
-use App\Models\Articles;
+use App\Models\Article;
 use App\Models\Category;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class ArticleController extends Controller
 {
-    public function index()
+    public function show(Category $category, Article $article)
     {
-        $articles = Article::with('category')->latest()->paginate(15);
-        return view('admin.articles.index', compact('articles'));
-    }
+        abort_if($article->category_id !== $category->id, 404);
+        abort_if(! $article->published_at, 404);
 
-    public function show(Articles $article)
-    {
-        return view('front.article', compact('article'));
+        $article->load(['category', 'user']);
+
+        $related = Article::published()
+            ->where('category_id', $category->id)
+            ->where('id', '!=', $article->id)
+            ->latest('published_at')
+            ->limit(3)
+            ->get();
+
+        return view('front.article', compact('category', 'article', 'related'));
     }
 }
