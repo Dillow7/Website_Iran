@@ -3,7 +3,12 @@ FROM php:8.2-apache
 # Installer les extensions PHP nécessaires
 RUN apt-get update && apt-get install -y \
     libpq-dev \
-    && docker-php-ext-install pdo_pgsql pdo
+    libxml2-dev \
+    libicu-dev \
+    libonig-dev \
+    && docker-php-ext-install pdo_pgsql pdo mbstring dom intl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Activer les modules Apache nécessaires
 RUN a2enmod rewrite

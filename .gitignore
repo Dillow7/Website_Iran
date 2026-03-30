@@ -1,2 +1,7 @@
 
 /app/node_modules
+<<<<<<< Updated upstream
+=======
+/app/node_modules/.bin
+/app/vendor
+>>>>>>> Stashed changes
