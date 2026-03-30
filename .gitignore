@@ -1,2 +1,6 @@
 
+<<<<<<< Updated upstream
 /app/node_modules
+=======
+/app/public/build/assets
+>>>>>>> Stashed changes
