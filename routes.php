@@ -10,6 +10,13 @@ class Router {
             '' => ['controller' => 'HomeController', 'method' => 'index'],
             '/' => ['controller' => 'HomeController', 'method' => 'index'],
             '/articles' => ['controller' => 'ArticleController', 'method' => 'index'],
+
+            // BackOffice (même stack et architecture)
+            '/admin' => ['controller' => 'AdminArticleController', 'method' => 'index'],
+            '/admin/articles' => ['controller' => 'AdminArticleController', 'method' => 'index'],
+            '/admin/articles/create' => ['controller' => 'AdminArticleController', 'method' => 'create'],
+            '/admin/login' => ['controller' => 'AdminAuthController', 'method' => 'login'],
+            '/admin/logout' => ['controller' => 'AdminAuthController', 'method' => 'logout'],
         ];
     }
     
@@ -23,6 +30,16 @@ class Router {
         if (isset($this->routes[$path])) {
             $route = $this->routes[$path];
             return $this->callController($route['controller'], $route['method']);
+        }
+
+        // BackOffice - route dynamique: /admin/articles/edit/123
+        if (preg_match('#^/admin/articles/edit/(\d+)$#', $path, $matches)) {
+            return $this->callController('AdminArticleController', 'edit', [(int)$matches[1]]);
+        }
+
+        // BackOffice - suppression: /admin/articles/delete/123
+        if (preg_match('#^/admin/articles/delete/(\d+)$#', $path, $matches)) {
+            return $this->callController('AdminArticleController', 'delete', [(int)$matches[1]]);
         }
         
         // Route dynamique pour les articles: /categorie/slug

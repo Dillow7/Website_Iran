@@ -1,6 +1,6 @@
 <?php
 // Configuration de la page
-$page_title = htmlspecialchars($data['article']['title']) . ' — ' . SITE_NAME;
+$page_title = htmlspecialchars($data['article']['meta_title'] ?: ($data['article']['title'] . ' — ' . SITE_NAME));
 $meta_description = htmlspecialchars($data['article']['meta_description'] ?? mb_substr(strip_tags($data['article']['content']), 0, 160));
 $canonical = SITE_URL . '/' . htmlspecialchars($data['article']['category_slug']) . '/' . htmlspecialchars($data['article']['slug']);
 $og_title = htmlspecialchars($data['article']['title']);

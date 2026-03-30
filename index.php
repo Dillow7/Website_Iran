@@ -1,5 +1,7 @@
 <?php
 
+session_start();
+
 // Configuration du site
 define('SITE_URL', 'http://localhost:8089');
 define('SITE_NAME', 'Iran News');
@@ -9,10 +11,16 @@ define('SITE_DESCRIPTION', 'Actualités sur la guerre en Iran : politique, milit
 require_once 'config/database.php';
 require_once 'routes.php';
 
+// Connexion PDO globale (certaines vues l'utilisent directement)
+$pdo = Database::getConnection();
+
 // Récupération de l'URL demandée
 $request_uri = $_SERVER['REQUEST_URI'];
 $request_uri = rtrim($request_uri, '/');
 $path = parse_url($request_uri, PHP_URL_PATH);
+
+// Exposer le path aux vues (navigation active)
+$GLOBALS['path'] = $path;
 
 // Router
 $router = new Router();
@@ -29,6 +37,25 @@ if ($result === null) {
     
     // Déterminer quelle vue charger
     $current_path = rtrim($path, '/');
+
+    // BackOffice
+    if ($current_path === '/admin' || str_starts_with($current_path, '/admin/')) {
+        $data = $result;
+
+        if ($current_path === '/admin' || $current_path === '/admin/articles') {
+            require_once 'views/admin/articles_index.php';
+        } elseif ($current_path === '/admin/articles/create') {
+            require_once 'views/admin/articles_create.php';
+        } elseif ($current_path === '/admin/login') {
+            require_once 'views/admin/login.php';
+        } elseif (preg_match('#^/admin/articles/edit/\d+$#', $current_path)) {
+            require_once 'views/admin/articles_edit.php';
+        } else {
+            http_response_code(404);
+            require_once 'views/404.php';
+        }
+        exit;
+    }
     
     switch ($current_path) {
         case '':

@@ -1,6 +1,19 @@
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
 /app/node_modules
 =======
 /app/public/build/assets
 >>>>>>> Stashed changes
+=======
+/app/public/build/assets
+>>>>>>> Stashed changes
+=======
+/app/node_modules
+/app/node_modules/.bin
+/app/vendor
+>>>>>>> Stashed changes
+/app/vendor
+/app/storage
+/app
