@@ -1,0 +1,13 @@
+# Activation du rewriting d'URL
+RewriteEngine On
+
+# Ne pas réécrire si le fichier/répertoire existe
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Règle principale - rediriger vers index.php
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Options de sécurité
+Options -Indexes
+ServerSignature Off
