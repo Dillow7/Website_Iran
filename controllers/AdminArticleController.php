@@ -64,13 +64,69 @@ class AdminArticleController {
         
         // Générer un nom de fichier unique
         $filename = uniqid('img_', true) . '.' . $extension;
-        $filepath = __DIR__ . '/../img/' . $filename;
+        $dir = __DIR__ . '/../img/';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        $filepath = $dir . $filename;
         
         // Sauvegarder
         if (file_put_contents($filepath, $imageData) === false) {
             return false;
         }
         
+        return $filename;
+    }
+
+    private function uploadImageFromFile(array $file) {
+        if (empty($file) || !isset($file['error'])) {
+            return false;
+        }
+
+        if ($file['error'] === UPLOAD_ERR_NO_FILE) {
+            return '';
+        }
+
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return false;
+        }
+
+        if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            return false;
+        }
+
+        $maxBytes = 5 * 1024 * 1024;
+        if (!empty($file['size']) && (int)$file['size'] > $maxBytes) {
+            return false;
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        $allowed = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/gif' => 'gif',
+            'image/webp' => 'webp',
+        ];
+
+        if (!isset($allowed[$mimeType])) {
+            return false;
+        }
+
+        $extension = $allowed[$mimeType];
+        $filename = uniqid('img_', true) . '.' . $extension;
+        $dir = __DIR__ . '/../img/';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        $filepath = $dir . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+            return false;
+        }
+
         return $filename;
     }
 
@@ -184,13 +240,25 @@ class AdminArticleController {
                 $errors['category_id'] = 'La catégorie est obligatoire.';
             }
 
-            if ($values['image'] !== '' && $values['alt_image'] === '') {
+            $hasUpload = isset($_FILES['image_file']) && ($_FILES['image_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+            if ($hasUpload && $values['alt_image'] === '') {
                 $errors['alt_image'] = 'Le alt de l\'image principale est obligatoire.';
             }
 
             $publishedAt = null;
             if ($values['published_at'] !== '') {
                 $publishedAt = $values['published_at'];
+            }
+
+            if (!$errors) {
+                if (isset($_FILES['image_file'])) {
+                    $uploaded = $this->uploadImageFromFile($_FILES['image_file']);
+                    if ($uploaded === false) {
+                        $errors['image_file'] = 'Upload impossible. Formats acceptés: jpg, png, gif, webp (max 5MB).';
+                    } elseif ($uploaded !== '') {
+                        $values['image'] = $uploaded;
+                    }
+                }
             }
 
             if (!$errors) {
@@ -278,19 +346,28 @@ class AdminArticleController {
                 $errors['category_id'] = 'La catégorie est obligatoire.';
             }
 
-            if ($values['image'] !== '' && $values['alt_image'] === '') {
+            // Image principale: uniquement upload fichier (si aucun upload, on garde l'image existante)
+            $hasUpload = isset($_FILES['image_file']) && ($_FILES['image_file']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+            $hasExistingImage = ($article['image'] ?? '') !== '';
+            if (($hasUpload || $hasExistingImage) && $values['alt_image'] === '') {
                 $errors['alt_image'] = 'Le alt de l\'image principale est obligatoire.';
             }
 
-            // Gestion du téléchargement d'image depuis une URL
-            $image_url = trim($_POST['image_url'] ?? '');
-            if ($image_url !== '') {
-                $downloadedImage = $this->downloadImageFromUrl($image_url, $values['alt_image']);
-                if ($downloadedImage === false) {
-                    $errors['image_url'] = 'Impossible de télécharger l\'image depuis cette URL.';
-                } else {
-                    $values['image'] = $downloadedImage;
+            if (!$errors) {
+                if (isset($_FILES['image_file'])) {
+                    $uploaded = $this->uploadImageFromFile($_FILES['image_file']);
+                    if ($uploaded === false) {
+                        $errors['image_file'] = 'Upload impossible. Formats acceptés: jpg, png, gif, webp (max 5MB).';
+                    } elseif ($uploaded !== '') {
+                        $values['image'] = $uploaded;
+                    } else {
+                        $values['image'] = (string)($article['image'] ?? '');
+                    }
                 }
+            }
+
+            if (!$errors && !$hasUpload) {
+                $values['image'] = (string)($article['image'] ?? '');
             }
 
             $publishedAt = null;

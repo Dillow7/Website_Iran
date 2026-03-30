@@ -56,7 +56,7 @@ function field($values, $key) {
                 Règles SEO: un seul H1 par page (le titre). Dans l'éditeur, utilise des H2/H3 pour structurer. Les images insérées doivent avoir un attribut alt.
             </div>
 
-            <form method="post" action="<?php echo SITE_URL; ?>/admin/articles/create">
+            <form method="post" action="<?php echo SITE_URL; ?>/admin/articles/create" enctype="multipart/form-data">
                 <label for="title">Titre (H1)</label>
                 <input id="title" name="title" value="<?php echo field($values, 'title'); ?>" required>
                 <?php if (!empty($errors['title'])): ?><div class="error"><?php echo htmlspecialchars($errors['title']); ?></div><?php endif; ?>
@@ -101,27 +101,13 @@ function field($values, $key) {
                     </div>
                 </div>
 
-                <div class="row">
-                    <div>
-                        <label for="image">Image principale (nom de fichier dans /img)</label>
-                        <input id="image" name="image" value="<?php echo field($values, 'image'); ?>" placeholder="ex: iran-military.jpg">
-                    </div>
-                    <div>
-                        <label for="alt_image">Alt image principale</label>
-                        <input id="alt_image" name="alt_image" value="<?php echo field($values, 'alt_image'); ?>" placeholder="Description de l'image">
-                        <?php if (!empty($errors['alt_image'])): ?><div class="error"><?php echo htmlspecialchars($errors['alt_image']); ?></div><?php endif; ?>
-                    </div>
-                </div>
+                <label for="alt_image">Alt image principale</label>
+                <input id="alt_image" name="alt_image" value="<?php echo field($values, 'alt_image'); ?>" placeholder="Description de l'image">
+                <?php if (!empty($errors['alt_image'])): ?><div class="error"><?php echo htmlspecialchars($errors['alt_image']); ?></div><?php endif; ?>
 
-                <div class="row">
-                    <div>
-                        <label for="image_url">OU Télécharger depuis une URL</label>
-                        <input id="image_url" name="image_url" type="url" placeholder="https://example.com/image.jpg">
-                        <div class="help">L'image sera téléchargée et sauvegardée dans /img</div>
-                        <?php if (!empty($errors['image_url'])): ?><div class="error"><?php echo htmlspecialchars($errors['image_url']); ?></div><?php endif; ?>
-                    </div>
-                    <div></div>
-                </div>
+                <label for="image_file">Image principale (upload depuis votre ordinateur)</label>
+                <input id="image_file" name="image_file" type="file" accept="image/*">
+                <?php if (!empty($errors['image_file'])): ?><div class="error"><?php echo htmlspecialchars($errors['image_file']); ?></div><?php endif; ?>
 
                 <label for="content">Contenu</label>
                 <textarea id="content" name="content" rows="16"><?php echo field($values, 'content'); ?></textarea>

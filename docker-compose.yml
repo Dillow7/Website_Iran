@@ -8,8 +8,10 @@ services:
     container_name: iran_news_app
     restart: unless-stopped
     working_dir: /var/www
+    command: bash -lc "chown -R www-data:www-data /var/www/img && apache2-foreground"
     volumes:
       - .:/var/www
+      - uploads_img:/var/www/img
     networks:
       - app-network
     depends_on:
@@ -35,6 +37,7 @@ services:
 
 volumes:
   postgres_data:
+  uploads_img:
 
 networks:
   app-network:
