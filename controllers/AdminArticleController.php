@@ -19,6 +19,61 @@ class AdminArticleController {
         }
     }
 
+    private function downloadImageFromUrl($url, $alt = '') {
+        if (empty($url)) return '';
+        
+        // Validation de l'URL
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+        
+        // Téléchargement avec cURL
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (compatible; IranNews/1.0)');
+        
+        $imageData = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode !== 200 || !$imageData) {
+            return false;
+        }
+        
+        // Vérifier que c'est bien une image
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_buffer($finfo, $imageData);
+        finfo_close($finfo);
+        
+        if (!in_array($mimeType, ['image/jpeg', 'image/png', 'image/gif', 'image/webp'])) {
+            return false;
+        }
+        
+        // Déterminer l'extension
+        $extension = '';
+        switch ($mimeType) {
+            case 'image/jpeg': $extension = 'jpg'; break;
+            case 'image/png': $extension = 'png'; break;
+            case 'image/gif': $extension = 'gif'; break;
+            case 'image/webp': $extension = 'webp'; break;
+        }
+        
+        // Générer un nom de fichier unique
+        $filename = uniqid('img_', true) . '.' . $extension;
+        $filepath = __DIR__ . '/../img/' . $filename;
+        
+        // Sauvegarder
+        if (file_put_contents($filepath, $imageData) === false) {
+            return false;
+        }
+        
+        return $filename;
+    }
+
     private function slugify($value) {
         $value = trim((string)$value);
         $value = mb_strtolower($value, 'UTF-8');
@@ -225,6 +280,17 @@ class AdminArticleController {
 
             if ($values['image'] !== '' && $values['alt_image'] === '') {
                 $errors['alt_image'] = 'Le alt de l\'image principale est obligatoire.';
+            }
+
+            // Gestion du téléchargement d'image depuis une URL
+            $image_url = trim($_POST['image_url'] ?? '');
+            if ($image_url !== '') {
+                $downloadedImage = $this->downloadImageFromUrl($image_url, $values['alt_image']);
+                if ($downloadedImage === false) {
+                    $errors['image_url'] = 'Impossible de télécharger l\'image depuis cette URL.';
+                } else {
+                    $values['image'] = $downloadedImage;
+                }
             }
 
             $publishedAt = null;

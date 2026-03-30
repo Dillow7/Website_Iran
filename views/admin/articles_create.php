@@ -113,9 +113,21 @@ function field($values, $key) {
                     </div>
                 </div>
 
+                <div class="row">
+                    <div>
+                        <label for="image_url">OU Télécharger depuis une URL</label>
+                        <input id="image_url" name="image_url" type="url" placeholder="https://example.com/image.jpg">
+                        <div class="help">L'image sera téléchargée et sauvegardée dans /img</div>
+                        <?php if (!empty($errors['image_url'])): ?><div class="error"><?php echo htmlspecialchars($errors['image_url']); ?></div><?php endif; ?>
+                    </div>
+                    <div></div>
+                </div>
+
                 <label for="content">Contenu</label>
                 <textarea id="content" name="content" rows="16"><?php echo field($values, 'content'); ?></textarea>
                 <?php if (!empty($errors['content'])): ?><div class="error"><?php echo htmlspecialchars($errors['content']); ?></div><?php endif; ?>
+                
+                <input type="hidden" name="content_sync" id="content_sync" value="">
 
                 <div class="actions">
                     <button type="submit">Enregistrer</button>
@@ -127,23 +139,17 @@ function field($values, $key) {
 
     <script>
         tinymce.init({
+            base_url: '/build/assets/tinymce',
+            suffix: '.min',
             selector: '#content',
-            height: 520,
+            height: 500,
             menubar: false,
             branding: false,
-            plugins: [
-                'lists',
-                'link',
-                'image',
-                'code'
-            ],
-            toolbar: [
-                'undo redo | blocks | bold italic | bullist numlist | link image | code'
-            ],
-            block_formats: 'Paragraphe=p; Titre 2=h2; Titre 3=h3; Titre 4=h4; Titre 5=h5; Titre 6=h6',
+            license_key: 'gpl',
+            plugins: 'lists link image code',
+            toolbar: 'undo redo | blocks | bold italic | bullist numlist | link image | code',
+            block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Heading 6=h6',
             image_title: true,
-            image_caption: false,
-            image_advtab: true,
             image_description: true,
             automatic_uploads: false,
             relative_urls: false,
@@ -151,54 +157,32 @@ function field($values, $key) {
             link_title: true,
             link_default_target: '_blank',
             content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 16px; line-height: 1.8; }',
-            setup: (editor) => {
-                editor.on('ExecCommand', (e) => {
-                    if (e.command === 'mceInsertContent') {
-                        // no-op
-                    }
+            setup: function(editor) {
+                // Synchroniser le contenu quand on change
+                editor.on('change input undo redo', function() {
+                    editor.save();
                 });
-                editor.on('NodeChange', () => {
-                    const imgs = editor.getBody().querySelectorAll('img');
-                    imgs.forEach(img => {
-                        if (!img.getAttribute('alt')) {
-                            img.setAttribute('alt', '');
-                        }
-                    });
+                
+                // Synchroniser avant la soumission du formulaire
+                document.querySelector('form').addEventListener('submit', function() {
+                    editor.save();
                 });
             },
             file_picker_types: 'image',
-            file_picker_callback: (cb, value, meta) => {
+            file_picker_callback: function(cb, value, meta) {
                 if (meta.filetype === 'image') {
-                    const editor = tinymce.activeEditor;
-                    editor.windowManager.open({
-                        title: 'Insérer une image',
-                        body: {
-                            type: 'panel',
-                            items: [
-                                { type: 'input', name: 'src', label: 'Source (URL ou /img/...)' },
-                                { type: 'input', name: 'alt', label: 'Alt (obligatoire)' }
-                            ]
-                        },
-                        buttons: [
-                            { type: 'cancel', text: 'Annuler' },
-                            { type: 'submit', text: 'Insérer', primary: true }
-                        ],
-                        onSubmit: (api) => {
-                            const data = api.getData();
-                            const src = (data.src || '').trim();
-                            const alt = (data.alt || '').trim();
-                            if (!src) {
-                                api.close();
-                                return;
-                            }
-                            if (!alt) {
-                                alert('Alt obligatoire pour le SEO.');
-                                return;
-                            }
-                            cb(src, { alt: alt });
-                            api.close();
-                        }
-                    });
+                    var input = document.createElement('input');
+                    input.setAttribute('type', 'file');
+                    input.setAttribute('accept', 'image/*');
+                    input.onchange = function() {
+                        var file = this.files[0];
+                        var reader = new FileReader();
+                        reader.onload = function () {
+                            cb(reader.result, { alt: 'Image description' });
+                        };
+                        reader.readAsDataURL(file);
+                    };
+                    input.click();
                 }
             }
         });
