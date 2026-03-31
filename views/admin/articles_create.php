@@ -3,8 +3,8 @@ $page_title = 'Créer un article — Admin — ' . SITE_NAME;
 $meta_description = 'Création d\'article.';
 
 $categories = $data['categories'] ?? [];
-$errors = $data['errors'] ?? [];
-$values = $data['values'] ?? [];
+$errors     = $data['errors']     ?? [];
+$values     = $data['values']     ?? [];
 
 function field($values, $key) {
     return htmlspecialchars((string)($values[$key] ?? ''));
@@ -16,114 +16,236 @@ function field($values, $key) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
-    <meta name="description" content="<?php echo htmlspecialchars($meta_description); ?>">
-
-<script src="/build/assets/tinymce/tinymce.min.js"></script>
+    <meta name="robots" content="noindex, nofollow">
+    <script src="/build/assets/tinymce/tinymce.min.js"></script>
+    <?php require_once 'admin_styles.php'; ?>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f5f6f8; color: #222; }
-        .container { max-width: 1100px; margin: 28px auto; padding: 0 18px; }
-        .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
-        h1 { font-size: 1.5rem; margin: 0; }
-        a.link { color: #0066cc; text-decoration: none; }
-        a.link:hover { text-decoration: underline; }
-        .card { background: #fff; border: 1px solid #e6e8ee; border-radius: 10px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
-        label { display: block; font-weight: 700; margin: 12px 0 6px; }
-        input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #cfd6e4; border-radius: 8px; font-size: 1rem; }
-        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .help { font-size: 0.9rem; color: #666; margin-top: 6px; }
-        .error { margin-top: 6px; color: #8a0f0f; font-size: 0.92rem; }
-        .actions { display: flex; gap: 12px; margin-top: 16px; align-items: center; }
-        button { padding: 10px 12px; border: 0; border-radius: 8px; background: #0066cc; color: #fff; font-weight: 800; cursor: pointer; }
-        button:hover { background: #0052a3; }
-        .secondary { background: #eef0f5; color: #222; font-weight: 700; }
-        .secondary:hover { background: #e4e7ef; }
-        .note { background: #fbfcff; border: 1px dashed #cfd6e4; padding: 12px; border-radius: 10px; color: #444; margin-bottom: 14px; }
+        .char-count {
+            font-size: 0.78rem;
+            color: var(--adm-text-muted);
+            text-align: right;
+            margin-top: 4px;
+        }
+        .char-count.warn { color: var(--adm-amber); }
+        .char-count.over { color: var(--adm-red); font-weight: 700; }
+        .slug-preview {
+            font-size: 0.8rem;
+            color: var(--adm-text-muted);
+            margin-top: 5px;
+            font-family: monospace;
+            background: var(--adm-bg);
+            padding: 4px 8px;
+            border-radius: 4px;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="topbar">
+
+    <!-- Top Nav -->
+    <nav class="adm-topnav" aria-label="Navigation administration">
+        <a href="<?php echo SITE_URL; ?>/admin/articles" class="adm-logo">
+            <div class="adm-logo-icon"><?php echo strtoupper(substr(SITE_NAME, 0, 1)); ?></div>
+            <span class="adm-logo-text"><?php echo htmlspecialchars(SITE_NAME); ?></span>
+            <span class="adm-logo-badge">Admin</span>
+        </a>
+        <div class="adm-topnav-right">
+            <div class="adm-user">
+                <div class="adm-user-avatar">
+                    <?php echo strtoupper(substr($_SESSION['admin_user_name'] ?? 'A', 0, 1)); ?>
+                </div>
+                <span><?php echo htmlspecialchars($_SESSION['admin_user_name'] ?? 'Admin'); ?></span>
+            </div>
+            <a href="<?php echo SITE_URL; ?>" class="adm-logout" target="_blank">↗ Voir le site</a>
+            <a href="<?php echo SITE_URL; ?>/admin/logout" class="adm-logout">Déconnexion</a>
+        </div>
+    </nav>
+
+    <div class="adm-wrap">
+
+        <!-- Page Header -->
+        <div class="adm-page-header">
             <div>
-                <h1>Créer un article</h1>
-                <div class="help">Connecté: <?php echo htmlspecialchars($_SESSION['admin_user_name'] ?? 'Admin'); ?> • <a class="link" href="<?php echo SITE_URL; ?>/admin/logout">Déconnexion</a></div>
+                <div class="adm-breadcrumb">
+                    <a href="<?php echo SITE_URL; ?>/admin/articles">Articles</a>
+                    <span>›</span>
+                    <span>Créer</span>
+                </div>
+                <h1 class="adm-page-title">Créer un article</h1>
             </div>
-            <div><a class="link" href="<?php echo SITE_URL; ?>/admin/articles">← Retour</a></div>
+            <a href="<?php echo SITE_URL; ?>/admin/articles" class="adm-btn adm-btn-ghost">
+                ← Retour à la liste
+            </a>
         </div>
 
-        <div class="card">
-            <div class="note">
-                Règles SEO: un seul H1 par page (le titre). Dans l'éditeur, utilise des H2/H3 pour structurer. Les images insérées doivent avoir un attribut alt.
-            </div>
-
-            <form method="post" action="<?php echo SITE_URL; ?>/admin/articles/create" enctype="multipart/form-data">
-                <label for="title">Titre (H1)</label>
-                <input id="title" name="title" value="<?php echo field($values, 'title'); ?>" required>
-                <?php if (!empty($errors['title'])): ?><div class="error"><?php echo htmlspecialchars($errors['title']); ?></div><?php endif; ?>
-
-                <div class="row">
-                    <div>
-                        <label for="meta_title">Title SEO (&lt;title&gt;) (optionnel)</label>
-                        <input id="meta_title" name="meta_title" value="<?php echo field($values, 'meta_title'); ?>" maxlength="70">
-                        <div class="help">Si vide, on utilise: "Titre — <?php echo SITE_NAME; ?>"</div>
-                    </div>
-                    <div>
-                        <label for="slug">Slug (URL)</label>
-                        <input id="slug" name="slug" value="<?php echo field($values, 'slug'); ?>" placeholder="ex: tensions-militaires-iran">
-                        <?php if (!empty($errors['slug'])): ?><div class="error"><?php echo htmlspecialchars($errors['slug']); ?></div><?php endif; ?>
-                    </div>
-                </div>
-
-                <label for="meta_description">Meta description (max 160)</label>
-                <textarea id="meta_description" name="meta_description" rows="3" maxlength="160"><?php echo field($values, 'meta_description'); ?></textarea>
-                <?php if (!empty($errors['meta_description'])): ?><div class="error"><?php echo htmlspecialchars($errors['meta_description']); ?></div><?php endif; ?>
-
-                <label for="excerpt">Extrait (optionnel)</label>
-                <textarea id="excerpt" name="excerpt" rows="3"><?php echo field($values, 'excerpt'); ?></textarea>
-
-                <div class="row">
-                    <div>
-                        <label for="category_id">Catégorie</label>
-                        <select id="category_id" name="category_id" required>
-                            <option value="">— Choisir —</option>
-                            <?php foreach ($categories as $c): ?>
-                                <option value="<?php echo (int)$c['id']; ?>" <?php echo field($values, 'category_id') == (string)$c['id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($c['name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <?php if (!empty($errors['category_id'])): ?><div class="error"><?php echo htmlspecialchars($errors['category_id']); ?></div><?php endif; ?>
-                    </div>
-                    <div>
-                        <label for="published_at">Date de publication (optionnel)</label>
-                        <input id="published_at" name="published_at" type="datetime-local" value="<?php echo field($values, 'published_at'); ?>">
-                        <div class="help">Vide = brouillon</div>
-                    </div>
-                </div>
-
-                <label for="alt_image">Alt image principale</label>
-                <input id="alt_image" name="alt_image" value="<?php echo field($values, 'alt_image'); ?>" placeholder="Description de l'image">
-                <?php if (!empty($errors['alt_image'])): ?><div class="error"><?php echo htmlspecialchars($errors['alt_image']); ?></div><?php endif; ?>
-
-                <label for="image_file">Image principale (upload depuis votre ordinateur)</label>
-                <input id="image_file" name="image_file" type="file" accept="image/*">
-                <?php if (!empty($errors['image_file'])): ?><div class="error"><?php echo htmlspecialchars($errors['image_file']); ?></div><?php endif; ?>
-
-                <label for="content">Contenu</label>
-                <textarea id="content" name="content" rows="16"><?php echo field($values, 'content'); ?></textarea>
-                <?php if (!empty($errors['content'])): ?><div class="error"><?php echo htmlspecialchars($errors['content']); ?></div><?php endif; ?>
-                
-                <input type="hidden" name="content_sync" id="content_sync" value="">
-
-                <div class="actions">
-                    <button type="submit">Enregistrer</button>
-                    <a class="link" href="<?php echo SITE_URL; ?>/admin/articles">Annuler</a>
-                </div>
-            </form>
+        <!-- SEO Notice -->
+        <div class="adm-notice">
+            <strong>Règles SEO :</strong> un seul H1 par page (le titre ci-dessous).
+            Dans l'éditeur, structurez le contenu avec des H2 et H3 uniquement.
+            Toutes les images insérées doivent avoir un texte alternatif (attribut <code>alt</code>).
         </div>
+
+        <div class="adm-card">
+            <div class="adm-card-header">
+                <span class="adm-card-title">Informations de l'article</span>
+            </div>
+            <div class="adm-card-body">
+                <form method="post"
+                      action="<?php echo SITE_URL; ?>/admin/articles/create"
+                      enctype="multipart/form-data"
+                      id="article-form">
+
+                    <!-- Titre -->
+                    <div class="adm-field">
+                        <label class="adm-label" for="title">Titre (H1) <span style="color:var(--adm-red)">*</span></label>
+                        <input class="adm-input" id="title" name="title"
+                               value="<?php echo field($values, 'title'); ?>" required
+                               placeholder="Titre principal de l'article">
+                        <?php if (!empty($errors['title'])): ?>
+                            <div class="adm-error"><?php echo htmlspecialchars($errors['title']); ?></div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- SEO Title + Slug -->
+                    <div class="adm-row">
+                        <div>
+                            <label class="adm-label" for="meta_title">Title SEO <span class="adm-muted">(optionnel — max 70)</span></label>
+                            <input class="adm-input" id="meta_title" name="meta_title"
+                                   value="<?php echo field($values, 'meta_title'); ?>"
+                                   maxlength="70"
+                                   placeholder="Titre affiché dans Google">
+                            <div class="char-count" id="meta_title_count">0 / 70</div>
+                            <div class="adm-help">Si vide : "Titre — <?php echo htmlspecialchars(SITE_NAME); ?>"</div>
+                        </div>
+                        <div>
+                            <label class="adm-label" for="slug">Slug (URL) <span style="color:var(--adm-red)">*</span></label>
+                            <input class="adm-input" id="slug" name="slug"
+                                   value="<?php echo field($values, 'slug'); ?>"
+                                   placeholder="ex: tensions-militaires-iran">
+                            <div class="slug-preview" id="slug_preview">
+                                <?php echo SITE_URL; ?>/<em id="slug_preview_text">votre-slug</em>
+                            </div>
+                            <?php if (!empty($errors['slug'])): ?>
+                                <div class="adm-error"><?php echo htmlspecialchars($errors['slug']); ?></div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- Meta description -->
+                    <div class="adm-field">
+                        <label class="adm-label" for="meta_description">Meta description <span class="adm-muted">(max 160)</span></label>
+                        <textarea class="adm-textarea" id="meta_description" name="meta_description"
+                                  rows="3" maxlength="160"
+                                  placeholder="Résumé affiché dans les résultats Google (150–160 caractères idéaux)"><?php echo field($values, 'meta_description'); ?></textarea>
+                        <div class="char-count" id="meta_desc_count">0 / 160</div>
+                        <?php if (!empty($errors['meta_description'])): ?>
+                            <div class="adm-error"><?php echo htmlspecialchars($errors['meta_description']); ?></div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Extrait -->
+                    <div class="adm-field">
+                        <label class="adm-label" for="excerpt">Extrait <span class="adm-muted">(optionnel — affiché sur les listings)</span></label>
+                        <textarea class="adm-textarea" id="excerpt" name="excerpt"
+                                  rows="3"><?php echo field($values, 'excerpt'); ?></textarea>
+                    </div>
+
+                    <!-- Catégorie + Date -->
+                    <div class="adm-row">
+                        <div>
+                            <label class="adm-label" for="category_id">Catégorie <span style="color:var(--adm-red)">*</span></label>
+                            <select class="adm-select" id="category_id" name="category_id" required>
+                                <option value="">— Choisir une catégorie —</option>
+                                <?php foreach ($categories as $c): ?>
+                                    <option value="<?php echo (int)$c['id']; ?>"
+                                        <?php echo field($values, 'category_id') == (string)$c['id'] ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($c['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php if (!empty($errors['category_id'])): ?>
+                                <div class="adm-error"><?php echo htmlspecialchars($errors['category_id']); ?></div>
+                            <?php endif; ?>
+                        </div>
+                        <div>
+                            <label class="adm-label" for="published_at">Date de publication</label>
+                            <input class="adm-input" id="published_at" name="published_at"
+                                   type="datetime-local"
+                                   value="<?php echo field($values, 'published_at'); ?>">
+                            <div class="adm-help">Laisser vide pour enregistrer en brouillon.</div>
+                        </div>
+                    </div>
+
+                    <!-- Image -->
+                    <div class="adm-row">
+                        <div>
+                            <label class="adm-label" for="image_file">Image principale</label>
+                            <input class="adm-input" id="image_file" name="image_file"
+                                   type="file" accept="image/*"
+                                   style="padding: 7px 12px; cursor:pointer;">
+                            <?php if (!empty($errors['image_file'])): ?>
+                                <div class="adm-error"><?php echo htmlspecialchars($errors['image_file']); ?></div>
+                            <?php endif; ?>
+                        </div>
+                        <div>
+                            <label class="adm-label" for="alt_image">Texte alternatif (alt) <span style="color:var(--adm-red)">*</span></label>
+                            <input class="adm-input" id="alt_image" name="alt_image"
+                                   value="<?php echo field($values, 'alt_image'); ?>"
+                                   placeholder="Description de l'image pour l'accessibilité et le SEO">
+                            <?php if (!empty($errors['alt_image'])): ?>
+                                <div class="adm-error"><?php echo htmlspecialchars($errors['alt_image']); ?></div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- Contenu TinyMCE -->
+                    <div class="adm-field">
+                        <label class="adm-label" for="content">Contenu de l'article <span style="color:var(--adm-red)">*</span></label>
+                        <textarea id="content" name="content" rows="16"><?php echo field($values, 'content'); ?></textarea>
+                        <?php if (!empty($errors['content'])): ?>
+                            <div class="adm-error"><?php echo htmlspecialchars($errors['content']); ?></div>
+                        <?php endif; ?>
+                    </div>
+
+                    <input type="hidden" name="content_sync" id="content_sync" value="">
+
+                    <div class="adm-form-actions">
+                        <button type="submit" class="adm-btn adm-btn-primary">Enregistrer l'article</button>
+                        <a href="<?php echo SITE_URL; ?>/admin/articles" class="adm-btn adm-btn-ghost">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 
     <script>
+        // ── Compteurs de caractères ──────────────────────────────
+        function setupCounter(inputId, counterId, max, warnAt) {
+            var el = document.getElementById(inputId);
+            var counter = document.getElementById(counterId);
+            if (!el || !counter) return;
+            function update() {
+                var len = el.value.length;
+                counter.textContent = len + ' / ' + max;
+                counter.className = 'char-count' + (len > max ? ' over' : len > warnAt ? ' warn' : '');
+            }
+            el.addEventListener('input', update);
+            update();
+        }
+        setupCounter('meta_title', 'meta_title_count', 70, 55);
+        setupCounter('meta_description', 'meta_desc_count', 160, 130);
+
+        // ── Aperçu du slug ───────────────────────────────────────
+        var slugInput = document.getElementById('slug');
+        var slugPreviewText = document.getElementById('slug_preview_text');
+        if (slugInput && slugPreviewText) {
+            slugInput.addEventListener('input', function() {
+                slugPreviewText.textContent = this.value || 'votre-slug';
+            });
+        }
+
+        // ── TinyMCE ──────────────────────────────────────────────
         tinymce.init({
             base_url: '/build/assets/tinymce',
             suffix: '.min',
@@ -134,7 +256,7 @@ function field($values, $key) {
             license_key: 'gpl',
             plugins: 'lists link image code',
             toolbar: 'undo redo | blocks | bold italic | bullist numlist | link image | code',
-            block_formats: 'Paragraph=p; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Heading 6=h6',
+            block_formats: 'Paragraphe=p; Titre 2=h2; Titre 3=h3; Titre 4=h4; Titre 5=h5; Titre 6=h6',
             image_title: true,
             image_description: true,
             automatic_uploads: false,
@@ -144,13 +266,8 @@ function field($values, $key) {
             link_default_target: '_blank',
             content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; font-size: 16px; line-height: 1.8; }',
             setup: function(editor) {
-                // Synchroniser le contenu quand on change
-                editor.on('change input undo redo', function() {
-                    editor.save();
-                });
-                
-                // Synchroniser avant la soumission du formulaire
-                document.querySelector('form').addEventListener('submit', function() {
+                editor.on('change input undo redo', function() { editor.save(); });
+                document.getElementById('article-form').addEventListener('submit', function() {
                     editor.save();
                 });
             },
@@ -164,7 +281,7 @@ function field($values, $key) {
                         var file = this.files[0];
                         var reader = new FileReader();
                         reader.onload = function () {
-                            cb(reader.result, { alt: 'Image description' });
+                            cb(reader.result, { alt: 'Description de l\'image' });
                         };
                         reader.readAsDataURL(file);
                     };

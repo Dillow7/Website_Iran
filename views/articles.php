@@ -8,12 +8,13 @@ $path = '/articles';
 require_once 'header.php';
 ?>
 
-<h1>Tous les articles</h1>
-<p style="color: #666; margin-bottom: 2rem;">
-    Découvrez l'ensemble de nos analyses et reportages sur la situation en Iran.
-</p>
+<!-- Page Header -->
+<div class="page-header" style="margin: -32px -24px 36px; padding-left: 24px; padding-right: 24px;">
+    <h1>Tous les articles</h1>
+    <p>Découvrez l'ensemble de nos analyses et reportages sur la situation en Iran.</p>
+</div>
 
-<div class="grid">
+<div class="grid" role="list">
     <?php
     // Pagination
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -43,25 +44,39 @@ require_once 'header.php';
     
     foreach ($articles as $article):
     ?>
-    <article class="article-card">
-        <img src="<?php echo SITE_URL; ?>/img/<?php echo htmlspecialchars($article['image'] ?? 'default.jpg'); ?>" 
-             alt="<?php echo htmlspecialchars($article['alt_image'] ?? $article['title']); ?>" 
-             class="article-image">
+    <article class="article-card" role="listitem" itemscope itemtype="https://schema.org/NewsArticle">
+        <div class="article-image-wrap">
+            <img src="<?php echo SITE_URL; ?>/img/<?php echo htmlspecialchars($article['image'] ?? 'default.jpg'); ?>"
+                 alt="<?php echo htmlspecialchars($article['alt_image'] ?? $article['title']); ?>"
+                 class="article-image"
+                 width="400" height="225"
+                 loading="lazy"
+                 itemprop="image">
+        </div>
         <div class="article-content">
-            <div class="category-tag"><?php echo htmlspecialchars($article['category_name']); ?></div>
-            <h3 class="article-title">
+            <div class="category-tag" itemprop="articleSection">
+                <?php echo htmlspecialchars($article['category_name']); ?>
+            </div>
+            <h2 class="article-title" itemprop="headline">
                 <a href="<?php echo SITE_URL; ?>/<?php echo htmlspecialchars($article['category_slug']); ?>/<?php echo htmlspecialchars($article['slug']); ?>">
                     <?php echo htmlspecialchars($article['title']); ?>
                 </a>
-            </h3>
+            </h2>
             <div class="article-meta">
-                Par <?php echo htmlspecialchars($article['author_name'] ?? 'Rédaction'); ?> • 
-                <?php echo date('d F Y', strtotime($article['published_at'])); ?>
+                <span itemprop="author">Par <?php echo htmlspecialchars($article['author_name'] ?? 'Rédaction'); ?></span>
+                <span class="meta-dot" aria-hidden="true"></span>
+                <time itemprop="datePublished" datetime="<?php echo date('c', strtotime($article['published_at'])); ?>">
+                    <?php echo date('d F Y', strtotime($article['published_at'])); ?>
+                </time>
             </div>
             <?php if ($article['excerpt']): ?>
-                <p class="article-excerpt"><?php echo htmlspecialchars($article['excerpt']); ?></p>
+                <p class="article-excerpt" itemprop="description">
+                    <?php echo htmlspecialchars($article['excerpt']); ?>
+                </p>
             <?php endif; ?>
-            <a href="<?php echo SITE_URL; ?>/<?php echo htmlspecialchars($article['category_slug']); ?>/<?php echo htmlspecialchars($article['slug']); ?>" class="btn">
+            <a href="<?php echo SITE_URL; ?>/<?php echo htmlspecialchars($article['category_slug']); ?>/<?php echo htmlspecialchars($article['slug']); ?>"
+               class="btn"
+               aria-label="Lire la suite : <?php echo htmlspecialchars($article['title']); ?>">
                 Lire la suite
             </a>
         </div>
@@ -71,20 +86,22 @@ require_once 'header.php';
 
 <!-- Pagination -->
 <?php if ($total_pages > 1): ?>
-<nav style="text-align: center; margin: 3rem 0;">
-    <div style="display: flex; justify-content: center; align-items: center; gap: 1rem;">
-        <?php if ($page > 1): ?>
-            <a href="?page=<?php echo $page - 1; ?>" class="btn">← Précédent</a>
-        <?php endif; ?>
-        
-        <span style="color: #666;">
-            Page <?php echo $page; ?> sur <?php echo $total_pages; ?>
-        </span>
-        
-        <?php if ($page < $total_pages): ?>
-            <a href="?page=<?php echo $page + 1; ?>" class="btn">Suivant →</a>
-        <?php endif; ?>
-    </div>
+<nav class="pagination" aria-label="Navigation des pages">
+    <?php if ($page > 1): ?>
+        <a href="?page=<?php echo $page - 1; ?>" class="btn btn-outline" rel="prev">
+            <span aria-hidden="true">←</span> Précédent
+        </a>
+    <?php endif; ?>
+
+    <span class="pagination-info">
+        Page <?php echo $page; ?> sur <?php echo $total_pages; ?>
+    </span>
+
+    <?php if ($page < $total_pages): ?>
+        <a href="?page=<?php echo $page + 1; ?>" class="btn" rel="next">
+            Suivant <span aria-hidden="true">→</span>
+        </a>
+    <?php endif; ?>
 </nav>
 <?php endif; ?>
 
